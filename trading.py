@@ -6,21 +6,10 @@ from lxml import etree
 import struct
 
 def main():
-  request = Request()
-  print(request.trading())
+  request = EbayRequest()
+  print(request.AddItem())
 
-def addListing(options):
-  #xml = buildxml(options)
-  #return etree.tostring(xml, pretty_print=True)
-  pass
-
-
-def getCategories():
-  pass
-
-
-
-class Request:
+class EbayRequest:
   """
     Class assists in making requests to the ebay trading api
     Workhore function is Request.trading
@@ -51,26 +40,20 @@ class Request:
 
 
     return xml
-  def construct_xml(self, request = {}):
-    if len(request.keys()) == 1: # we assume that we have a parent object - the request must be complete. This is of course bs
-      data = request
-      defaultXml = self.dict2xml(data)
-      dom = etree.fromsting(defaultXml)
+  def construct_xml(self, request = 'GeteBayOfficialTimeRequest', params = None):
+    dom = etree.Element(request, xmlns='urn:ebay:apis:eBLBaseComponents')
 
-    else: # need to find out what to do if we have no parent object. For now well call for the official time...
-      data = {'GeteBayOfficialTimeRequest xmlns="urn:ebay:apis:eBLBaseComponents"': {
-        'RequesterCredentials': {'eBayAuthToken': self.auth_token},
-        'Version': '747'
-      }}
-      defaultXml = self.dict2xml(data)
-      dom = etree.fromstring(defaultXml)
-      print(self.dict2xml(request))
-      if request:
-        for key in request:
-          print (etree.fromstring(self.dict2xml({key: request[key]})))
-          #dom.documentElement.appendChild(parseString(self.dict2xml({key: request[key]}))) # add request as a child
+    if isinstance(params, str):  # check if params is given as a xml string
+      params = etree.XML(params)
+    if params: 
+      if params.__class__ == '<class \'lxml.etree._Element\'>':
+        if not params.find('.//RequesterCredentials'):
+          requesterCredentials = etree.XML('<RequesterCredentials><eBayAuthToken>' + self.auth_token + '</eBayAuthToken></RequesterCredentials>')
+          version = etree.XML('<Version>' + self.version + '</Version>')
+          dom.append(requesterCredentials)
+          dom.append(version)
+        dom.append(params)
 
-    #print ('DOM:\n', etree.tostring(dom).decode('UTF-8'))
     return dom
 
   def construct_header(self, header, request):
@@ -81,31 +64,33 @@ class Request:
       'X-EBAY-API-CERT-NAME': self.cert_name,
       'X-EBAY-API-CALL-NAME': request,
       'X-EBAY-API-SITEID': self.site_id,
+      'X-EBAY-API-DETAIL-LEVEL': '0',
       'Content-Type': 'text/xml',
       'X-EBAY-API-RESPONSE-ENCODING': 'JSON'
     }
     defaultHeader.update(header)
     return defaultHeader
 
-  def trading(self, params = {}, headers = {}, method = "POST"):
+  def trading(self, request = "GeteBayOfficialTimeRequest", params = {}, headers = {}, method = "POST"):
     """
-      sends a request to the ebay trading api via xml (but you can also use get if it should be necessary)
+      sends a request to the ebay trading api via xml 
     """
-    data = self.construct_xml({'stuff': {'muff': 'puff'}, 'ruff': {'fluxx': 'cruff'}})
-    request = data.tag.replace('Request', '')
-    print('request:', request)
-    headers = self.construct_header(headers, request) 
+    data = self.construct_xml(request, params)
+    requestName = request.replace('Request', '') 
+    headers = self.construct_header(headers, requestName) 
     h = httplib2.Http(".cache")
+
     #if data and method=="GET":
     #  url = self.endpoint + '?' + urlencode(data)
     #elif data and method=="POST":
-    #url = self.endpoint
+    url = self.endpoint
     body = data
 
-    print (url)
-    print ('headers:\n', headers, '\nxml:\n', etree.tostring(body)decode('UTF-8'))
-
-    resp, content = h.request(url, method=method, headers=headers, body=etree.tostring(body))
+    print('requestName:', requestName, '\n')
+    print (url, '\n')
+    print ('headers:\n', headers, '\n')
+    print ('DOM:\n', '<?xml version="1.0" encoding="utf-8"?>' + etree.tostring(body).decode('UTF-8'), '\n')
+    resp, content = h.request(url, method=method, headers=headers, body='<?xml version="1.0" encoding="utf-8"?>'+etree.tostring(body).decode('UTF-8'))
     #print (resp
     #print (content)
     #print (url)
@@ -113,124 +98,131 @@ class Request:
     return resp, content
 
 
-  def GeteBayOfficialTime():
-    request = Request()
+  def GeteBayOfficialTime(self):  # gets official time from ebay server (using trading api endpoint)
+    request = EbayRequest()
     return request.trading()
-  def AddFixedPriceItem:
+
+  def AddFixedPriceItem():
     pass
-  def AddItem:
+
+  def AddItem(self, item = {}):  # item is a dom object or a dictionary
+
+    if item:
+      return self.trading(request = 'AddItemRequest', params = item)
+    else:
+      return None
+
+  def AddItems():
     pass
-  def AddItems:
+  def AddToItemDescription():
     pass
-  def AddToItemDescription:
+  def CompleteSale():
     pass
-  def CompleteSale:
+  def ConfirmIdentity():
     pass
-  def ConfirmIdentity:
+  def DeleteMyMessages():
     pass
-  def DeleteMyMessages:
+  def EndFixedPriceItem():
     pass
-  def EndFixedPriceItem:
+  def EndItem():
     pass
-  def EndItem:
+  def EndItems():
     pass
-  def EndItems:
+  def FetchToken():
     pass
-  def FetchToken:
+  def GetAccount():
     pass
-  def GetAccount:
+  def GetAdFormatLeads():
     pass
-  def GetAdFormatLeads:
+  def GetAllBidders():
     pass
-  def GetAllBidders:
+  def GetApiAccessRules():
     pass
-  def GetApiAccessRules:
+  def GetFeedback():
     pass
-  def GetFeedback:
+  def GetItem():
     pass
-  def GetItem:
+  def GetItemRecommendations():
     pass
-  def GetItemRecommendations:
+  def GetItemsAwaitingFeedback():
     pass
-  def GetItemsAwaitingFeedback:
+  def GetItemShipping():
     pass
-  def GetItemShipping:
+  def GetItemTransactions():
     pass
-  def GetItemTransactions:
+  def GetMemberMessages():
     pass
-  def GetMemberMessages:
+  def GetMyeBaySelling():
     pass
-  def GetMyeBaySelling:
+  def GetOrders():
     pass
-  def GetOrders:
+  def GetOrderTransactions():
     pass
-  def GetOrderTransactions:
+  def GetPopularKeywords():
     pass
-  def GetPopularKeywords:
+  def GetSellerDashboard():
     pass
-  def GetSellerDashboard:
+  def GetSellerEvents():
     pass
-  def GetSellerEvents: 
+  def GetSellerList():
     pass
-  def GetSellerList:
+  def GetSellerPayments():
     pass
-  def GetSellerPayments:
+  def GetSellerTransactions():
     pass
-  def GetSellerTransactions:
+  def GetSessionID():
     pass
-  def GetSessionID:
+  def GetStore():
     pass
-  def GetStore:
+  def GetTokenStatus():
     pass
-  def GetTokenStatus:
+  def GetUser():
     pass
-  def GetUser:
+  def GetUserContactDetails():
     pass
-  def GetUserContactDetails:
+  def GetUserDisputes():
     pass
-  def GetUserDisputes:
+  def RelistFixedPriceItem():
     pass
-  def RelistFixedPriceItem:
+  def RelistItem():
     pass
-  def RelistItem:
+  def RespondToFeedback():
     pass
-  def RespondToFeedback:
+  def RespondToWantItNowPost():
     pass
-  def RespondToWantItNowPost:
+  def ReviseCheckoutStatus():
     pass
-  def ReviseCheckoutStatus:
+  def ReviseFixedPriceItem():
     pass
-  def ReviseFixedPriceItem:
+  def ReviseInventoryStatus():
     pass
-  def ReviseInventoryStatus:
+  def ReviseItem():
     pass
-  def ReviseItem:
+  def RevokeToken():
     pass
-  def RevokeToken:
+  def SendInvoice():
     pass
-  def SendInvoice:
+  def SetPromotionalSale():
     pass
-  def SetPromotionalSale:
+  def SetPromotionalSaleListings():
     pass
-  def SetPromotionalSaleListings:
+  def SetShippingDiscountProfiles():
     pass
-  def SetShippingDiscountProfiles:
+  def SetStore():
     pass
-  def SetStore:
+  def SetStoreCategories():
     pass
-  def SetStoreCategories:
+  def SetTaxTable():
     pass
-  def SetTaxTable:
+  def ValidateTestUserRegistration():
     pass
-  def ValidateTestUserRegistration:
+  def VerifyAddFixedPriceItem():
     pass
-  def VerifyAddFixedPriceItem:
+  def VerifyAddItem():
     pass
-  def VerifyAddItem:
+  def VerifyAddSecondChanceItem():
     pass
-  def VerifyAddSecondChanceItem:
-    pass
-  def VerifyRelistItem:
+  def VerifyRelistItem():
     pass
 
 
